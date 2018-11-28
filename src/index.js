@@ -18,26 +18,33 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log(data)
     allGifts = data
 
+    // assign our allGifts variable to the array of gifts returned from api
+    // invoke show gifts to iterate over allGifts and append to page
     showGifts()
   })
 
-  // new form
+  // find new form on page
   const newGiftForm = document.getElementById("new-new-gift-form")
   const newGiftName = document.getElementById("new-gift-name-input")
   const newGiftImage = document.querySelector("#new-gift-image-input")
 
+  // newGiftForm event listener on submit
   newGiftForm.addEventListener('submit', event => {
     event.preventDefault()
 
+    // create an object with the input fields of the new gift form
+    // assign the values for a new gift
     let newGift = {
       name: newGiftName.value,
       image: newGiftImage.value
     }
 
     // add new gift and optimistically render
+    // this will add the NEW GIFT to a copy of the initial array of allGifts
     allGifts = [...allGifts, newGift]
     showGifts()
 
+    // send our newGift data to the api to persist the created gift
     fetch('http://localhost:3000/gifts', {
       method: 'POST',
       headers: {
@@ -53,7 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         console.log(data)
 
-        // replace the newGift to have an id for the edit and delete button
+        // replace the newGift to have an id
+        // with the returned newGift replace the gift with the returned
+        // created newGift because there were no id's upon optimistic creation
         allGifts.splice(allGifts.length-1, 1, data)
 
         showGifts()
@@ -118,7 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // preventDefault
       event.preventDefault()
 
-      // edit fetch this is already done optimistically from earlier
+      // edit fetch this is already done optimistically
+      // send data to api in order to update the selected gift
       fetch(`http://localhost:3000/gifts/${editId}`, {
         method: 'PATCH',
         headers: {
@@ -251,13 +261,17 @@ document.addEventListener('DOMContentLoaded', () => {
               return gift
             }
           })
+          allGifts = updatedGifts
 
           // delete is already being done optimistically above
+          // send a delete request to the specified route to remove from the api
           fetch(`http://localhost:3000/gifts/${deleteButton.id}`, { method: 'DELETE' })
             .then(response => response.json())
             .then(data => console.log(data))
 
-          allGifts = updatedGifts
+          // there is no need to make changes in our local copy of allGifts
+          // optimistic delete will be the same 
+
           giftCollection.innerHTML = ""
           showGifts()
         })
