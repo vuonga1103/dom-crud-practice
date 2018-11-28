@@ -10,8 +10,58 @@ document.addEventListener('DOMContentLoaded', () => {
   // find the search input to filter over gift names <input>
   const filterGifts = document.querySelector("#filter-input")
 
+  let allGifts
+  // get our gifts
+  fetch('http://localhost:3000/gifts')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data)
+    allGifts = data
+
+    showGifts()
+  })
+
+  // new form
+  const newGiftForm = document.getElementById("new-new-gift-form")
+  const newGiftName = document.getElementById("new-gift-name-input")
+  const newGiftImage = document.querySelector("#new-gift-image-input")
+
+  newGiftForm.addEventListener('submit', event => {
+    event.preventDefault()
+
+    let newGift = {
+      name: newGiftName.value,
+      image: newGiftImage.value
+    }
+
+    // add new gift and optimistically render
+    allGifts = [...allGifts, newGift]
+    showGifts()
+
+    fetch('http://localhost:3000/gifts', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: newGiftName.value,
+        image: newGiftImage.value
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data)
+
+        // replace the newGift to have an id for the edit and delete button
+        allGifts.splice(allGifts.length-1, 1, data)
+
+        showGifts()
+      })
+  })
+
   // define the array of all gifts
-  let allGifts = gifts
+  // let allGifts = gifts
 
   // define the array of filtered gifts when searching
   let filteredGifts = []
@@ -49,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // iterate over all gifts to find the one
     // whose id matches the one we clicked on
     let editId = parseInt(event.target.id)
+
     let editedGift = allGifts.find(gift => {
       return gift.id === editId
     })
@@ -66,6 +117,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // so we have the prevent that behavior with
       // preventDefault
       event.preventDefault()
+
+      // edit fetch this is already done optimistically from earlier
+      fetch(`http://localhost:3000/gifts/${editId}`, {
+        method: 'PATCH',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: editGiftName.value,
+          image: editGiftImage.value
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data)
+        })
+
 
       editedGift.name = editGiftName.value
       editedGift.image = editGiftImage.value
@@ -87,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   showGifts = () => {
+    giftCollection.innerHTML = ""
     // we're going to iterate over each gift
     // and display as an <div> inside the <ul>
     // with an <li> for the name of the gift
@@ -125,6 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.addEventListener("click", event => {
           // remove the gift we want to delete from the
           // array of all gifts
+          debugger
+          fetch(`http://localhost:3000/gifts/${deleteButton.id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => console.log(data))
+
           let updatedGifts = allGifts.filter(gift => {
             if (gift.id !== parseInt(event.target.id)) {
               return gift
@@ -176,6 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
               return gift
             }
           })
+
+          // delete is already being done optimistically above
+          fetch(`http://localhost:3000/gifts/${deleteButton.id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => console.log(data))
+
           allGifts = updatedGifts
           giftCollection.innerHTML = ""
           showGifts()
@@ -193,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // you ABSOLUTELY must invoke that function so that
   // it actually does that logic!
   // otherwise, you're just defining a function that will
-  // never apply the code to anywhere on the DOM! 
+  // never apply the code to anywhere on the DOM!
+  // console.log('AT THE END OF DOM CONTENT LOADED', allGifts)
   showGifts()
 })
