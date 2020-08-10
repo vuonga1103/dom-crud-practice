@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM has been fully loaded')
-  console.table(gifts)
 
-  const giftListUl = document.querySelector("#gift-list");
-        filterInput = document.querySelector("#filter-input");
-        newGiftForm = document.querySelector("#new-gift-form");
-          newGiftNameInput = document.querySelector("#new-gift-form input#gift-name-input");
-          newGiftImageInput = document.querySelector("#new-gift-form input#gift-image-input");
+  const giftListUl = document.querySelector("#gift-list"),
+        filterInput = document.querySelector("#filter-input"),
+        newGiftForm = document.querySelector("#new-gift-form"),
+          newGiftNameInput = document.querySelector("#new-gift-form input#gift-name-input"),
+          newGiftImageInput = document.querySelector("#new-gift-form input#gift-image-input"),
+        allGiftObjectArray = [];
   
   // A user should be able to search for and filter particular gifts with names that include a particular search query.
   filterInput.addEventListener("keypress", (evt) => {
@@ -25,39 +24,37 @@ document.addEventListener('DOMContentLoaded', () => {
       image: newGiftImageInput.value
     }
     
-    gifts.push(newGiftObject);
-    const newGiftLi = createGiftLi(newGiftObject);
-    addGiftToListUl(newGiftLi);
-
-    const giftEditBtn = newGiftLi.querySelector("#gift-edit");
-    const giftDeleteBtn = newGiftLi.querySelector("#gift-delete");
-
-    giftEditBtn.addEventListener("click", (evt) => displayGiftEditForm(evt, newGiftObject, giftLi))
-
-    giftDeleteBtn.addEventListener("click", (evt) => {
-      deleteGiftObjectAndUpdateDOM(evt, newGiftObject)
+    fetch('http://localhost:3000/gifts', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(newGiftObject)
     })
+      .then(response => response.json())
+      .then(newGiftObject => {
+        const newGiftLi = createGiftLi(newGiftObject);
+        addGiftToListUl(newGiftLi);
+      })
   })
 
   // Takes an individual giftObject, create needed elements
   function createGiftLi(giftObject) {
-    const giftLi = document.createElement("li");
-          giftLi.innerText = giftObject.name;
-          giftLi.innerHTML += "<br>";
+    const giftLi = document.createElement("li"),
+          giftLi.innerText = giftObject.name,
+          giftLi.innerHTML += "<br>",
           
-          giftImg = document.createElement("img");
-          giftImg.src = giftObject.image;
-          giftLi.append(giftImg);
-          giftLi.innerHTML += "<br>";
+          giftImg = document.createElement("img"),
+          giftImg.src = giftObject.image,
+          giftLi.append(giftImg),
+          giftLi.innerHTML += "<br>",
 
-          giftEditBtn = document.createElement("button");
-          giftEditBtn.innerText = "Edit";
-          giftEditBtn.setAttribute("id", "gift-edit");
-          giftLi.append(giftEditBtn);
+          giftEditBtn = document.createElement("button"),
+          giftEditBtn.innerText = "Edit",
+          giftEditBtn.setAttribute("id", "gift-edit"),
+          giftLi.append(giftEditBtn),
 
-          giftDeleteBtn = document.createElement("button");
-          giftDeleteBtn.innerText = "Delete";
-          giftDeleteBtn.setAttribute("id", "gift-delete");
+          giftDeleteBtn = document.createElement("button"),
+          giftDeleteBtn.innerText = "Delete",
+          giftDeleteBtn.setAttribute("id", "gift-delete"),
           giftLi.append(giftDeleteBtn);
 
     giftEditBtn.addEventListener("click", (evt) => displayGiftEditForm(evt, giftObject, giftLi))
@@ -81,33 +78,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Display edit form, adds event listener to submission
   function displayGiftEditForm(evt, giftObject, giftLi) {
-    const giftEditForm = document.createElement("FORM");
+    
+    if (!giftLi.querySelector("form")) {
+      const giftEditForm = document.createElement("FORM"),
 
-          nameInput = document.createElement("input");
-          nameInput.setAttribute("type", "text");
-          nameInput.setAttribute("id", "name");
-          nameInput.setAttribute("name", "name");
-          nameInput.setAttribute("value", giftObject.name);
+            nameInput = document.createElement("input"),
+            nameInput.setAttribute("type", "text"),
+            nameInput.setAttribute("id", "name"),
+            nameInput.setAttribute("name", "name"),
+            nameInput.setAttribute("value", giftObject.name),
 
-          imageInput = document.createElement("input");
-          imageInput.setAttribute("type", "text");
-          imageInput.setAttribute("id", "image");
-          imageInput.setAttribute("name", "image");
-          imageInput.setAttribute("value", giftObject.image);
+            imageInput = document.createElement("input"),
+            imageInput.setAttribute("type", "text"),
+            imageInput.setAttribute("id", "image"),
+            imageInput.setAttribute("name", "image"),
+            imageInput.setAttribute("value", giftObject.image),
 
-          submitInput = document.createElement("input");
-          submitInput.setAttribute("type", "submit");
-          submitInput.setAttribute("value", "Submit");
-          
+            submitInput = document.createElement("input"),
+            submitInput.setAttribute("type", "submit"),
+            submitInput.setAttribute("value", "Submit");
+            
+      giftEditForm.append(nameInput, imageInput, submitInput);
+      giftLi.append(giftEditForm);
 
-    giftEditForm.append(nameInput, imageInput, submitInput);
-    giftLi.append(giftEditForm);
+    } else {
+      giftLi.querySelector("form").hidden = false;
+    }
 
-    giftEditForm.addEventListener("submit", (evt) => {
+    giftLi.querySelector("form").addEventListener("submit", (evt) => {
       updateGiftLiAndGiftObject(evt, giftLi, giftObject);
     })
   }
-
+  
   // Update the gift object in gifts array, update the giftLi
   function updateGiftLiAndGiftObject(evt, giftLi, giftObject) {
     evt.preventDefault();
@@ -115,38 +117,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const nameInput = evt.target.name.value;
     const imageInput = evt.target.image.value;
     
-    const giftObjectIdx = gifts.indexOf(giftObject);
-    gifts[giftObjectIdx].name = nameInput;
-    gifts[giftObjectIdx].image = imageInput;
+    const editedGiftObject = {
+      name: nameInput,
+      image: imageInput
+    }
 
-    giftLi.innerHTML = createGiftLi(giftObject).innerHTML;
-
-    const giftEditBtn = giftLi.querySelector("#gift-edit");
-    const giftDeleteBtn = giftLi.querySelector("#gift-delete");
-    
-    giftEditBtn.addEventListener("click", (evt) => displayGiftEditForm(evt, giftObject, giftLi))
-
-    giftDeleteBtn.addEventListener("click", (evt) => {
-      deleteGiftObjectAndUpdateDOM(evt, giftObject)
+    fetch('http://localhost:3000/gifts/' + giftObject.id, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(editedGiftObject)
     })
+      .then(response => response.json())
+      .then(editedGiftObject => {
+        giftLi.firstChild.textContent = nameInput;
+        giftLi.children[1].src.textContent = imageInput;
+        giftLi.lastElementChild.hidden = true;
+      });
   }
 
   // Delete the gift object and update the DOM
   function deleteGiftObjectAndUpdateDOM(evt, giftObject) {
-    const giftObjectIdx = gifts.indexOf(giftObject);
-    gifts.splice(giftObjectIdx, 1);
-
-    giftListUl.innerHTML = '';
-    addGiftsToDOM(gifts);
+    fetch('http://localhost:3000/gifts/' + giftObject.id, {
+      method: 'DELETE',
+    })
+      .then(response => response.json())
+      .then(result => {
+        evt.target.parentElement.remove();
+      });
   }
 
   // Filters the DOM by the searchQuery
   function filterByGiftName(searchQuery) {
-    const filteredGifts = gifts.filter(giftObject => giftObject.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredGifts = allGiftObjectArray.filter(giftObject => giftObject.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     giftListUl.innerHTML = '';
     addGiftsToDOM(filteredGifts);
   }
 
-  addGiftsToDOM(gifts);
+  function fetchGifts() {
+    fetch('http://localhost:3000/gifts')
+      .then(response => response.json())
+      .then(giftObjectArray => {
+        allGiftObjectArray = giftObjectArray;
+        addGiftsToDOM(giftObjectArray);
+      })
+  }
+
+  fetchGifts();
 })
